@@ -36,7 +36,7 @@ def main():
 			s=0
 			for i in (n[k] for k in n if k[1]==key[1]):
 				s+=i
-			return (n(key)+ep)/(s+ep*noe)
+			return (n[key]+ep)/(s+ep*noe)
 		
 		if key not in p:
 			p[key] = calc(key, n, noe)
@@ -46,17 +46,35 @@ def main():
 	Ppp = partial(getProb, p=p_pp, n=n_pp, noe=len(n_p))
 	
 	def viterbi(words):
-		state = nametuple('State', ['prob', 'dpos'])
-		t = [{START_WORD:state(START_WORD, 0)}] #List[Dict[str, State[int, str]]
-		for i,x in enumrate(words):
+		state = namedtuple('State', ['prob', 'dpos'])
+		t = [{START_WORD:state(0, START_WORD)}] #List[Dict[str, State[int, str]]
+		dtt = t[0]
+		for x in words:
 			tt = {}
 			for y in n_p:
-				tt[y] = max([State((log(Pwp((y, dy))*Ppp((x, y))) + t[i][dy]), dy) for dy in t[i]])
+				tt[y] = max([state(log(Pwp((y, dy))*Ppp((x, y))) + dtt[dy].prob, dy) for dy in dtt])
 			t.append(tt)
+			dtt = tt
+		print(t)
+		last = max(t[-1].items(), key=lambda x:x[1])
+		#print(last)
+		return t
 
-	with open("data/entest", 'r') as f:
+	with open("test", 'r') as f:
+		word, pos = f.readline().rstrip('\n').split('/')
+		words = [word]
+		poss = [pos]
 		for line in f:
 			word, pos = line.rstrip('\n').split('/')
+			if word == START_WORD:
+				print(words)
+				print(poss)
+				p = viterbi(words)
+				#print(p)
+				words.clear()
+				poss.clear()
+			words.append(word)
+			poss.append(pos)
 
 if __name__ == '__main__':
 	main()
