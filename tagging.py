@@ -2,37 +2,30 @@
 Part-of-Speech(pos) tagging
 """
 from functools import partial
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from math import log
 
 START_WORD = '###'
 
 def main():
-	def count(n, key):
-		"""
-		(n:Dict[T, int], key:T) -> None
-		"""	
-		if key in n:
-			n[key] += 1
-		else:
-			n[key] = 1
-	
-	n_w = {} #Dict[str, int] Count number of word.
-	n_p = {} #Dict[str, int] Count number of pos.
-	n_wp = {} #Dict[(str, str), int] Count number of pair of word and pos. n(x,y)
-	n_pp = {} #Dict[(str, str), int] Count number of a pos befor a pos. n(y,y')
+	n_w = defaultdict(lambda: 0) #Dict[str, int] Count number of word.
+	n_p = defaultdict(lambda: 0) #Dict[str, int] Count number of pos.
+	n_wp = defaultdict(lambda: 0) #Dict[(str, str), int] Count number of pair of word and pos. n(x,y)
+	n_pp = defaultdict(lambda: 0) #Dict[(str, str), int] Count number of a pos befor a pos. n(y,y')
 	
 	dpos = START_WORD
 	with open("data/entrain", 'r') as f:
 		for line in f:
 			word, pos = line.rstrip('\n').split('/')
 
-			count(n_w, word)
-			count(n_p, pos)
-			count(n_wp, (word, pos))
-			count(n_pp, (pos, dpos))
+			n_w[word] += 1
+			n_p[pos] += 1
+			n_wp[(word, pos)] += 1
+			n_pp[(pos, dpos)] += 1
 			dpos = pos
+
 	print(len(n_w))
+	print(n_p)
 	
 	p_wp = {} #probability of pair of word and pos. P(x|y)
 	p_pp = {} #probability of a pos befor a pos. P(y|y')
