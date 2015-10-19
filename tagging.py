@@ -36,16 +36,16 @@ def main():
             p[key] = calc(key, n, nn, noe)
         return p[key]
 
-    Pwp = partial(getProb, p=p_wp, n=n_wp, nn=n_p, noe=len(n_w))
-    Ppp = partial(getProb, p=p_pp, n=n_pp, nn=n_p, noe=len(n_p))
+    P_wp = partial(getProb, p=p_wp, n=n_wp, nn=n_p, noe=len(n_w))
+    P_pp = partial(getProb, p=p_pp, n=n_pp, nn=n_p, noe=len(n_p))
 
-    def viterbi(words):
+    def viterbi(words, pset, Pwp, Ppp):
         state = namedtuple('State', ['prob', 'dpos'])
         t = [{START_WORD:state(0, START_WORD)}] #List[Dict[str, State[int, str]]
         dtt = t[0]
         for x in words:
             tt = {}
-            for y in n_p:
+            for y in pset:
                 tt[y] = max([state(log(Pwp((x, y))*Ppp((y, dy))) + dtt[dy].prob, dy) for dy in dtt])
             t.append(tt)
             dtt = tt
@@ -68,15 +68,15 @@ def main():
         for line in f:
             word, pos = line.rstrip('\n').split('/')
             if word == START_WORD:
-                p = viterbi(words[1:])
+                p = viterbi(words[1:], n_p.keys(), P_wp, P_pp)
                 diff = [i for i,(x,y) in enumerate(zip(p, poss)) if x != y]
                 cdiff += len(diff)
-                cwords += len(words)
+                cwords += len(words)-1
                 print(words)
                 print(poss)
                 print(p)
                 print(diff)
-                print(len(diff), '/', len(words))
+                print(len(diff), '/', len(words)-1)
                 words.clear()
                 poss.clear()
             words.append(word)
