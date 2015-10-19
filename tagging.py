@@ -24,26 +24,20 @@ def main():
             n_pp[(pos, dpos)] += 1
             dpos = pos
 
-    print(len(n_w))
-    print(n_p)
-
     p_wp = {} #probability of pair of word and pos. P(x|y)
     p_pp = {} #probability of a pos befor a pos. P(y|y')
 
-    def getProb(key, p, n, noe):
-        def calc(key, n, noe):
-            ep = 0.01
-            s=0
-            for i in (n[k] for k in n if k[1]==key[1]):
-            s+=i
-            return (n[key]+ep)/(s+ep*noe)
+    def getProb(key, p, n, nn, noe):
+        def calc(key, n, nn, noe):
+            ep = 0.0000001
+            return (n[key]+ep)/(nn[key[1]]+ep*noe)
 
         if key not in p:
-            p[key] = calc(key, n, noe)
+            p[key] = calc(key, n, nn, noe)
         return p[key]
 
-    Pwp = partial(getProb, p=p_wp, n=n_wp, noe=len(n_w))
-    Ppp = partial(getProb, p=p_pp, n=n_pp, noe=len(n_p))
+    Pwp = partial(getProb, p=p_wp, n=n_wp, nn=n_p, noe=len(n_w))
+    Ppp = partial(getProb, p=p_pp, n=n_pp, nn=n_p, noe=len(n_p))
 
     def viterbi(words):
         state = namedtuple('State', ['prob', 'dpos'])
@@ -52,29 +46,42 @@ def main():
         for x in words:
             tt = {}
             for y in n_p:
-                tt[y] = max([state(log(Pwp((y, dy))*Ppp((x, y))) + dtt[dy].prob, dy) for dy in dtt])
+                tt[y] = max([state(log(Pwp((x, y))*Ppp((y, dy))) + dtt[dy].prob, dy) for dy in dtt])
             t.append(tt)
             dtt = tt
-        print(t)
-        last = max(t[-1].items(), key=lambda x:x[1])
-        #print(last)
-        return t
 
-    with open("test", 'r') as f:
+        mt = max(t[-1].items(), key=lambda x:x[1])
+        dpos = mt[1].dpos
+        l = [mt[0]]
+        for i in reversed(t[:-1]):
+            l.append(dpos)
+            dpos = i[dpos].dpos
+        l.reverse()
+        return l
+
+    with open("data/entest", 'r') as f:
         word, pos = f.readline().rstrip('\n').split('/')
         words = [word]
         poss = [pos]
+        cdiff = 0
+        cwords = 0
         for line in f:
             word, pos = line.rstrip('\n').split('/')
             if word == START_WORD:
+                p = viterbi(words[1:])
+                diff = [i for i,(x,y) in enumerate(zip(p, poss)) if x != y]
+                cdiff += len(diff)
+                cwords += len(words)
                 print(words)
                 print(poss)
-                p = viterbi(words)
-                #print(p)
+                print(p)
+                print(diff)
+                print(len(diff), '/', len(words))
                 words.clear()
                 poss.clear()
             words.append(word)
             poss.append(pos)
+        print('All:', cdiff, '/', cwords, 'correct:', (1-(cdiff/cwords))*100, '%')
 
 if __name__ == '__main__':
     main()
